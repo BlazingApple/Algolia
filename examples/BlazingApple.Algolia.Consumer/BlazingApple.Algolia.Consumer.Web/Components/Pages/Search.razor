@@ -1,0 +1,11 @@
+﻿@page "/search"
+@rendermode InteractiveServer
+@using BlazingApple.Algolia.Components
+<PageTitle>Search</PageTitle>
+
+<h1>Search</h1>
+<InstantSearch T="object" Context="context" ApplyQuerySettings="SetQuery">
+	<ResultTemplate>
+		@context.ToString()
+	</ResultTemplate>
+</InstantSearch>
