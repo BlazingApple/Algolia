@@ -1,0 +1,73 @@
+﻿@using BlazingApple.Algolia.Components.Facets
+@using BlazingApple.Algolia.Components.Results
+@using BlazingApple.Components.Search
+@using BlazingApple.Components
+@using BlazingApple.Components.Lists
+
+@typeparam T where T : class
+
+<div class="d-flex flex-column">
+	@if (_isLoading)
+	{
+		<Loading Style="BlazingApple.Components.Loading.LoadingStyle.Default" />
+	}
+	else
+	{
+		<div class="d-flex position-sticky" style="top:0;">
+			<div class="col-lg-3">
+				<div class="d-flex flex-column">
+					@if (_response is not null)
+					{
+						@foreach (var facetGroup in _response.Facets)
+						{
+							<Panel Header="@facetGroup.Key">
+								<FlatMenu Facets="facetGroup.Value" OnRefine="@(() => Search())"></FlatMenu>
+							</Panel>
+						}
+					}
+				</div>
+			</div>
+			<div class="col-lg-9">
+				<div class="d-flex flex-column">
+					<SearchBox @bind-Value="SearchQuery" TitleText="Search" OnSearchChange="Search" />
+					<div class="d-flex justify-content-end" style="width:100%;">
+						<DropDownPageSize @bind-Value="_pageSize" @bind-Value:after="Search" />
+						<button type="button" class="btn btn-outline-primary btn-sm ms-2" disabled="@_isLoading">
+							Clear refinements
+						</button>
+
+						<button type="button" class="btn btn-sm btn-outline-primary ms-2" style="border-radius: 50%;" disabled="@_isLoading" onclick="@(() => Search)" title="Refresh">
+							<i class="fas fa-sync-alt"></i>
+						</button>
+					</div>
+
+					<div class="d-flex flex-column">
+						@if (_response is not null)
+						{
+							@if (_response?.Hits is not null)
+							{
+								<div style="max-width: 100%;">
+									<RecordList Items="_response.Hits" Context="result">
+										<RowTemplate>
+											<SearchResultRow Result="result">
+												@if (result.Result is not null && ResultTemplate is not null)
+												{
+													@ResultTemplate(result.Result)
+												}
+											</SearchResultRow>
+										</RowTemplate>
+									</RecordList>
+									<ListPaginator BatchSize="_response.HitsPerPage" ResultCount="_response.NbHits" @bind-Value="_page" OnChange="Search" />
+								</div>
+							}
+							else
+							{
+								<div style="font-style: italic;">No results.</div>
+							}
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+</div>

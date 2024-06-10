@@ -1,0 +1,24 @@
+﻿@using BlazingApple.Components
+@using BlazingApple.Components.Lists
+@inherits RefinementListBase
+
+@if (Facets is not null)
+{
+	<ul>
+		<RowLimitedList Context="facet" Items="Facets.ToList()" RowLimit="DefaultItemCount">
+			<RowTemplate>
+				<li style="list-style-type: none;" class="mb-2">
+					<button class="btn btn-light btn-sm d-flex justify-content-between" style="min-width:90%;" @onclick="@(() => OnRefine.InvokeAsync())">
+						<div>
+							@facet.Key
+						</div>
+
+						<div class="text-muted">
+							@facet.Value
+						</div>
+					</button>
+				</li>
+			</RowTemplate>
+		</RowLimitedList>
+	</ul>
+}
