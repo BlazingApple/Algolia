@@ -57,7 +57,9 @@
 											</SearchResultRow>
 										</RowTemplate>
 									</RecordList>
-									<ListPaginator BatchSize="_response.HitsPerPage" ResultCount="_response.NbHits" @bind-Value="_page" OnChange="Search" />
+									<div style="width: 100%;" class="d-flex justify-content-center">
+										<ListPaginator BatchSize="_response.HitsPerPage" ResultCount="_response.NbHits" @bind-Value="_page" OnChange="Search" />
+									</div>
 								</div>
 							}
 							else

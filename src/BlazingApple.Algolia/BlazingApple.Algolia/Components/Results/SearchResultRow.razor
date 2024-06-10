@@ -2,14 +2,18 @@
 
 @if(Result is not null)
 {
-	<div>
-		@if (ChildContent is not null && Result.Result is not null)
-		{
-			@ChildContent(Result.Result)
-		}
-		else
-		{
-			@Result.Result?.ToString()
-		}
-	</div>
+	<tr>
+		<td>
+			<div>
+				@if (ChildContent is not null && Result.Result is not null)
+				{
+					@ChildContent(Result.Result)
+				}
+				else
+				{
+					@Result.Result?.ToString()
+				}
+			</div>
+		</td>
+	</tr>
 }
