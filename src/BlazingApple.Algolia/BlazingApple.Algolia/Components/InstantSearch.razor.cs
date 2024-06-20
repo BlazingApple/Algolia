@@ -20,8 +20,13 @@ public partial class InstantSearch<T> : ComponentBase
 	private bool _isLoading;
 	private int _pageSize = 10;
 	private readonly string? _lastUrl;
-	private SearchResponse<SearchResult<T>>? _response;
 	private int _page;
+	private SearchResponse<SearchResult<T>>? _response;
+	private bool _hasSearched;
+	private readonly Dictionary<string, HashSet<string>> _selectedFacets = [];
+	private IReadOnlyDictionary<string, FacetDetails>? _displayFacets => FacetsToDisplay?.ToDictionary(f => f.Key);
+
+
 	/// <summary>The user's query.</summary>
 	private string? SearchQuery { get; set; }
 
@@ -36,19 +41,51 @@ public partial class InstantSearch<T> : ComponentBase
 	[Parameter]
 	public RenderFragment<T>? ResultTemplate { get; set; }
 
+	/// <summary>Facets that should be rendered to the user.</summary>
+	[Parameter]
+	public List<FacetDetails>? FacetsToDisplay { get; set; }
+
+	/// <summary>Whether to search immediately on rendering the component.</summary>
+	[Parameter]
+	public bool SearchOnLoad { get; set; } = true;
+
 	[Inject]
 	private IAlgoliaSearchService SearchService { get; set; } = null!;
 
-	/// <inheritdoc />
-	protected override async Task OnInitializedAsync()
+	/// <inheritdoc/>
+	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
-		await base.OnInitializedAsync();
+		await base.OnAfterRenderAsync(firstRender);
 
-		if (_response is null)
+		if (firstRender && _response is null && SearchOnLoad)
+		{
+			_hasSearched = true;
 			await PerformSearch(true, false);
+		}
 	}
 
-	private async Task Search() => await PerformSearch(false, true);
+	/// <inheritdoc />
+	protected override async Task OnParametersSetAsync()
+	{
+		await base.OnParametersSetAsync();
+		if (FacetsToDisplay is null)
+		{
+			return;
+		}
+
+		foreach (FacetDetails facetToDisplay in FacetsToDisplay)
+		{
+			if (!_selectedFacets.ContainsKey(facetToDisplay.Key))
+			{
+				_selectedFacets.Add(facetToDisplay.Key, []);
+			}
+		}
+	}
+
+	private async Task Search()
+	{
+		await PerformSearch(false, true);
+	}
 
 	private async Task<Query> GetQuery()
 	{
@@ -56,6 +93,7 @@ public partial class InstantSearch<T> : ComponentBase
 		{
 			HitsPerPage = _pageSize,
 			Page = _page,
+			FacetFilters = ToFacetFilterString(_selectedFacets).ToList()
 		};
 
 		if (ApplyQuerySettings.HasDelegate)
@@ -83,6 +121,7 @@ public partial class InstantSearch<T> : ComponentBase
 			SearchQuery = query.SearchQuery;
 			_page = query.Page ?? 0;
 			_pageSize = query.HitsPerPage ?? 10;
+			UpdateSelectedFacetsFromQuery(query);
 		}
 		else
 		{
@@ -90,22 +129,70 @@ public partial class InstantSearch<T> : ComponentBase
 		}
 
 		_response = await SearchService.Search<T>(query);
-		StateHasChanged();
 		if (updateUrl)
+		{
 			UpdateUrl(query);
+		}
+
 		_page = _response.Page;
 		_isLoading = false;
+		StateHasChanged();
+	}
+
+	private void UpdateSelectedFacetsFromQuery(Query query)
+	{
+		foreach (IEnumerable<string>? facetFilter in query.FacetFilters)
+		{
+			foreach (string? selectedFacet in facetFilter)
+			{
+				string[] keyAndFacet = selectedFacet.Split(':');
+				if (!_selectedFacets.ContainsKey(keyAndFacet[0]))
+				{
+					_selectedFacets.Add(keyAndFacet[0], []);
+				}
+
+				_selectedFacets[keyAndFacet[0]].Add(keyAndFacet[1]);
+			}
+		}
 	}
 
 	private void UpdateUrl(Query query)
 	{
-		JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
-		options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+		JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+		{
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+		};
 
 		string queryPayload = JsonSerializer.Serialize(query, options);
 		Url newUri = NavManager.Uri.SetQueryParam("query", EncodeQueryPayload(queryPayload));
 
 		NavManager.NavigateTo(newUri, false, true);
+	}
+
+	/// <summary>
+	/// Combines selected facets using AND logic across categories and OR logic within them. 
+	/// 
+	/// See <![CDATA[https://www.algolia.com/doc/guides/managing-results/refine-results/filtering/in-depth/filters-and-facetfilters/#differences-between-filtering-parameters]]>
+	/// </summary>
+	/// <param name="allSelectedFacets"></param>
+	/// <returns>Faceting string</returns>
+	private IEnumerable<List<string>> ToFacetFilterString(Dictionary<string, HashSet<string>> allSelectedFacets)
+	{
+		foreach (KeyValuePair<string, HashSet<string>> facetsInCategory in allSelectedFacets)
+		{
+			if (facetsInCategory.Value.Count > 0)
+			{
+				yield return ToFacetFilterString(facetsInCategory.Key, facetsInCategory.Value).ToList();
+			}
+		}
+	}
+
+	private IEnumerable<string> ToFacetFilterString(string key, HashSet<string> selectedFacets)
+	{
+		foreach (string selectedFacet in selectedFacets)
+		{
+			yield return $"{key}:{selectedFacet}";
+		}
 	}
 
 	private static string EncodeQueryPayload(string queryPayload)
@@ -118,7 +205,9 @@ public partial class InstantSearch<T> : ComponentBase
 	private static string? DecodeQueryPayload(string? encodedPayload)
 	{
 		if (encodedPayload == null)
+		{
 			return null;
+		}
 
 		byte[] bytes = Convert.FromBase64String(encodedPayload);
 		string jsonString = Encoding.UTF8.GetString(bytes);

@@ -20,7 +20,7 @@ h1:focus
 
 .ba-search
 {
-	border: 1px solid lightgrey !important; 
+	border: 1px solid lightgrey !important;
 }
 
 .blazor-error-boundary
@@ -30,7 +30,12 @@ h1:focus
 	color: white;
 }
 
-	.blazor-error-boundary::after
-	{
-		content: "An error has occurred."
-	}
+.btn-light.active
+{
+	background-color: aliceblue !important;
+}
+
+.blazor-error-boundary::after
+{
+	content: "An error has occurred."
+}

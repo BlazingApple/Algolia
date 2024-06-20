@@ -1,5 +1,7 @@
 ﻿@using BlazingApple.Components
+@using BlazingApple.Components.HTMLElements
 @using BlazingApple.Components.Lists
+@using Microsoft.AspNetCore.Components.Web
 @inherits RefinementListBase
 
 @if (Facets is not null)
@@ -7,8 +9,14 @@
 	<ul>
 		<RowLimitedList Context="facet" Items="Facets.ToList()" RowLimit="DefaultItemCount">
 			<RowTemplate>
+				@{
+					string classes = "btn btn-light btn-sm d-flex justify-content-between";
+					
+					if ((Value != null && Value.Contains(facet.Key)))
+						classes += " active";
+				}
 				<li style="list-style-type: none;" class="mb-2">
-					<button class="btn btn-light btn-sm d-flex justify-content-between" style="min-width:90%;" @onclick="@(() => OnRefine.InvokeAsync())">
+					<ToggleButton Classes="btn btn-light btn-sm d-flex justify-content-between" style="min-width:90%;" ValueChanged="@(() => OnFacetToggle(facet.Key))">
 						<div>
 							@facet.Key
 						</div>
@@ -16,7 +24,7 @@
 						<div class="text-muted">
 							@facet.Value
 						</div>
-					</button>
+					</ToggleButton>
 				</li>
 			</RowTemplate>
 		</RowLimitedList>
