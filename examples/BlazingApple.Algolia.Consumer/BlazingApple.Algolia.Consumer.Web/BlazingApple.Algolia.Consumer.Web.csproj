@@ -7,12 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\BlazingApple.Algolia\BlazingApple.Algolia\BlazingApple.Algolia.csproj" />
-    <ProjectReference Include="..\BlazingApple.Algolia.Consumer.ServiceDefaults\BlazingApple.Algolia.Consumer.ServiceDefaults.csproj" />
+    <Compile Remove="Components\Searching\**" />
+    <Content Remove="Components\Searching\**" />
+    <EmbeddedResource Remove="Components\Searching\**" />
+    <None Remove="Components\Searching\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Searching\" />
+    <ProjectReference Include="..\..\..\src\BlazingApple.Algolia\BlazingApple.Algolia\BlazingApple.Algolia.csproj" />
+    <ProjectReference Include="..\BlazingApple.Algolia.Consumer.ServiceDefaults\BlazingApple.Algolia.Consumer.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
